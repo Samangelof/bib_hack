@@ -7,19 +7,19 @@ class CustomUserManager(BaseUserManager):
     """
     Менеджер для пользовательской модели, где email используется в качестве уникального идентификатора для аутентификации.
     """
-    def create_user(self, email, phone_number, fcs, password=None, **extra_fields):
+    def create_user(self, email, phone_number, full_name, password=None, **extra_fields):
         if not email:
             raise ValueError(_('Email должен быть указан'))
-        if not fcs:
+        if not full_name:
             raise ValueError(_("FCs должен быть указан "))
         
         email = self.normalize_email(email)
-        user = self.model(email=email, phone_number=phone_number, fcs=fcs, **extra_fields)
+        user = self.model(email=email, phone_number=phone_number, full_name=full_name, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, phone_number, fcs, password=None, **extra_fields):
+    def create_superuser(self, email, phone_number, full_name, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
 
@@ -28,7 +28,7 @@ class CustomUserManager(BaseUserManager):
         if extra_fields.get('is_superuser') is not True:
             raise ValueError(_('Superuser должен иметь is_superuser=True.'))
 
-        return self.create_user(email, phone_number, fcs, password, **extra_fields)
+        return self.create_user(email, phone_number, full_name, password, **extra_fields)
 
 
 
@@ -45,7 +45,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     email = models.EmailField(_('email address'), unique=True)
     phone_number = models.CharField(_('phone number'), max_length=15, unique=True)
-    fcs = models.CharField(_("fcs"), max_length=255, unique=False, null=False)
+    full_name = models.CharField(_("fcs"), max_length=255, unique=False, null=False)
 
     role = models.CharField(
         _('role'),
@@ -91,9 +91,17 @@ class UserProfile(models.Model):
     bio = models.TextField(_('biography'), blank=True)
     profile_image = models.ImageField(_('profile image'), upload_to='profiles/', blank=True, null=True)
     website = models.URLField(_('website'), blank=True)
-    
+
     def __str__(self):
         return f'Profile of {self.user.email}'
+    
+    # получения всех комментариев и избранных книг пользователя
+    def get_favorite_books(self):
+        return self.user.favorite_books.all()
+
+    def get_comments(self):
+        return Comment.objects.filter(author=self.user)
+
     
 # ----------------
 class Discussion(models.Model):
@@ -124,7 +132,24 @@ class Comment(models.Model):
     discussion = models.ForeignKey(Discussion, related_name='comments', on_delete=models.CASCADE)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     author = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
 
     def __str__(self):
-        return f"Comment by {self.author} on {self.discussion}"
+        return f"Comment by {self.author.email} on {self.discussion.title}"
+
+
+# ----------------
+# избранные
+class UserFavoriteBook(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='favorite_books')
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name='favorited_by')
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'book')
+        verbose_name = _('Favorite Book')
+        verbose_name_plural = _('Favorite Books')
+
+    def __str__(self):
+        return f"{self.user.email} added {self.book.title} to favorites"
