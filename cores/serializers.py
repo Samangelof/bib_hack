@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-
+from .models import Book
 
 User = get_user_model()
 
@@ -19,3 +19,18 @@ class RegisterSerializer(serializers.ModelSerializer):
         user.set_password(validated_data['password'])
         user.save()
         return user
+
+
+class BookSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Book
+        fields = [
+            'title',
+            'authors',
+            'description',
+            'category',
+            'publisher',
+            'price_starting_with',
+            'publish_date_month',
+            'publish_date_year'
+        ]
