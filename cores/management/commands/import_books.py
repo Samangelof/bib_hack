@@ -7,7 +7,7 @@ class Command(BaseCommand):
     help = 'Импорт данных о книгах из файла Excel'
 
     def handle(self, *args, **kwargs):
-        workbook = openpyxl.load_workbook('C:/Users/Samangelof/Desktop/bib_hack/library_hack/cores/books.xlsx')
+        workbook = openpyxl.load_workbook('./cores/books.xlsx')
         sheet = workbook.active
 
         # Получаем названия колонок из первой строки

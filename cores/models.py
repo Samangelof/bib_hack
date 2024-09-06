@@ -7,16 +7,19 @@ class CustomUserManager(BaseUserManager):
     """
     Менеджер для пользовательской модели, где email используется в качестве уникального идентификатора для аутентификации.
     """
-    def create_user(self, email, phone_number, password=None, **extra_fields):
+    def create_user(self, email, phone_number, fcs, password=None, **extra_fields):
         if not email:
             raise ValueError(_('Email должен быть указан'))
+        if not fcs:
+            raise ValueError(_("FCs должен быть указан "))
+        
         email = self.normalize_email(email)
-        user = self.model(email=email, phone_number=phone_number, **extra_fields)
+        user = self.model(email=email, phone_number=phone_number, fcs=fcs, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, phone_number, password=None, **extra_fields):
+    def create_superuser(self, email, phone_number, fcs, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
 
@@ -25,7 +28,8 @@ class CustomUserManager(BaseUserManager):
         if extra_fields.get('is_superuser') is not True:
             raise ValueError(_('Superuser должен иметь is_superuser=True.'))
 
-        return self.create_user(email, phone_number, password, **extra_fields)
+        return self.create_user(email, phone_number, fcs, password, **extra_fields)
+
 
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
@@ -41,7 +45,8 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     email = models.EmailField(_('email address'), unique=True)
     phone_number = models.CharField(_('phone number'), max_length=15, unique=True)
-    
+    fcs = models.CharField(_("fcs"), max_length=255, unique=False, null=False)
+
     role = models.CharField(
         _('role'),
         max_length=20,
@@ -100,6 +105,19 @@ class Discussion(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class UserLikedCategories(models.Model):
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='liked_categories')
+    category = models.CharField(null=False, max_length=255)
+
+    class Meta:
+        unique_together = ('user', 'category')
+        verbose_name = _('User Liked Category')
+        verbose_name_plural = _('User Liked Categories')
+
+    def __str__(self):
+        return f"{self.user.user.email} likes {self.category}"
 
 # ----------------
 class Comment(models.Model):
