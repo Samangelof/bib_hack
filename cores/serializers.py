@@ -30,11 +30,11 @@ class BookSerializer(serializers.ModelSerializer):
             'title',
             'authors',
             'description',
-            'category',
-            'publisher',
-            'price_starting_with',
-            'publish_date_month',
-            'publish_date_year'
+            'categories',
+            'published_year',
+            'average_rating',
+            'num_pages',
+            'ratings_count'
         ]
 
 class DiscussionSerializer(serializers.ModelSerializer):

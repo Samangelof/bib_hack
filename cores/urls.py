@@ -12,7 +12,9 @@ from cores.views import (
     RecommendationView,
     FavoriteBookView,
     DiscussionListCreateAPIView,
-    DiscussionDetailAPIView
+    DiscussionDetailAPIView,
+    BookListCreateView,
+    BookRetrieveUpdateDestroyView
 )
 
 
@@ -28,8 +30,11 @@ urlpatterns = [
 
     path('api/favorites/', FavoriteBookView.as_view(), name='favorites'),
 
-    path('api/discussions/', DiscussionListCreateAPIView.as_view(), name='discussion-list-create'),
-    path('api/discussions/<int:pk>/', DiscussionDetailAPIView.as_view(), name='discussion-detail'),
+    path('api/discussions/', DiscussionListCreateAPIView.as_view(), name='discussion_list_create'),
+    path('api/discussions/<int:pk>/', DiscussionDetailAPIView.as_view(), name='discussion_detail'),
+
+    path('api/books/', BookListCreateView.as_view(), name='book_list_create'),
+    path('api/books/<int:pk>/', BookRetrieveUpdateDestroyView.as_view(), name='book_detail'),
 ]
 
 # {

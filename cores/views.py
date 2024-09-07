@@ -1,3 +1,4 @@
+from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.http import HttpResponse, HttpRequest
@@ -6,7 +7,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
-from .serializers import RegisterSerializer, DiscussionSerializer
+from .serializers import RegisterSerializer, DiscussionSerializer, BookSerializer
 from .models import (
     Book,
     UserLikedCategories,
@@ -87,6 +88,7 @@ class LikedCategoriesView(APIView):
 
         return Response({"liked_categories": categories_list})
 
+    
     # category : Fiction
     def post(self, request: HttpRequest) -> HttpResponse:
         user = CustomUser.objects.get(email=request.user.email)
@@ -94,9 +96,24 @@ class LikedCategoriesView(APIView):
 
         category = request.data.get("category")
 
+        books = Book.objects.exclude(
+            categories__isnull=True).exclude(categories__exact='')
+        unique_categories = set()
+
+        for book in books:
+            categories_list = book.categories.split(',')
+
+            for category_iter in categories_list:
+                unique_categories.add(category_iter.strip())
+
+        print(type(category))
+
         if not category:
             return Response({"error": "Category is required"}, status=status.HTTP_400_BAD_REQUEST)
-
+        
+        elif not category in unique_categories:
+            return Response({"error": "Category is not found"}, status=status.HTTP_404_NOT_FOUND)
+        
         liked_category, created = UserLikedCategories.objects.get_or_create(
             user=user_profile,
             category=category
@@ -233,3 +250,18 @@ class DiscussionDetailAPIView(APIView):
         discussion = self.get_object(pk)
         discussion.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
+
+# ---------------------------------------------------------------
+# список книг и создание новых зкниг
+class BookListCreateView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    queryset = Book.objects.all()
+    serializer_class = BookSerializer
+
+# ---------------------------------------------------------------
+# получение, обновление, удаление
+class BookRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated]
+    queryset = Book.objects.all()
+    serializer_class = BookSerializer
