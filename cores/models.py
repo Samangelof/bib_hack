@@ -114,6 +114,17 @@ class Discussion(models.Model):
     def __str__(self):
         return self.title
 
+# ----------------
+class Comment(models.Model):
+    discussion = models.ForeignKey(Discussion, related_name='comments', on_delete=models.CASCADE)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    author = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"Comment by {self.author.email} on {self.discussion.title}"
+
 
 class UserLikedCategories(models.Model):
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='liked_categories')
@@ -126,18 +137,6 @@ class UserLikedCategories(models.Model):
 
     def __str__(self):
         return f"{self.user.user.email} likes {self.category}"
-
-# ----------------
-class Comment(models.Model):
-    discussion = models.ForeignKey(Discussion, related_name='comments', on_delete=models.CASCADE)
-    content = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    author = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-
-    def __str__(self):
-        return f"Comment by {self.author.email} on {self.discussion.title}"
-
 
 # ----------------
 # избранные

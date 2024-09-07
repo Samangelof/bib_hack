@@ -14,7 +14,10 @@ from cores.views import (
     DiscussionListCreateAPIView,
     DiscussionDetailAPIView,
     BookListCreateView,
-    BookRetrieveUpdateDestroyView
+    BookRetrieveUpdateDestroyView,
+    CommentDetailAPIView,
+    CommentListCreateAPIView,
+    BookSearchView
 )
 
 
@@ -33,9 +36,15 @@ urlpatterns = [
     path('api/discussions/', DiscussionListCreateAPIView.as_view(), name='discussion_list_create'),
     path('api/discussions/<int:pk>/', DiscussionDetailAPIView.as_view(), name='discussion_detail'),
 
+    path('api/discussions/<int:discussion_pk>/comments/', CommentListCreateAPIView.as_view(), name='comment_list_create'),
+    path('api/comments/<int:pk>/', CommentDetailAPIView.as_view(), name='comment_detail'),
+
+
     path('api/books/', BookListCreateView.as_view(), name='book_list_create'),
+    path('api/books/search/', BookSearchView.as_view(), name='book_search'),
     path('api/books/<int:pk>/', BookRetrieveUpdateDestroyView.as_view(), name='book_detail'),
 ]
+
 
 # {
 #     "email": "user@example.com",
