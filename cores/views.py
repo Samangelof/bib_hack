@@ -17,6 +17,9 @@ from .models import (
     Discussion
 )
 
+import requests
+import json
+
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
@@ -106,8 +109,6 @@ class LikedCategoriesView(APIView):
             for category_iter in categories_list:
                 unique_categories.add(category_iter.strip())
 
-        print(type(category))
-
         if not category:
             return Response({"error": "Category is required"}, status=status.HTTP_400_BAD_REQUEST)
         
@@ -128,31 +129,69 @@ class LikedCategoriesView(APIView):
 class RecommendationView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, *args, **kwargs) -> HttpResponse:
+    def post(self, request) -> HttpResponse:
         user_profile = get_object_or_404(UserProfile, user=request.user)
+        user = request.user
+        favorite_books = UserFavoriteBook.objects.filter(user=user).all()[:60]
+        favorite_books_ids = [favorite_book.book.id for favorite_book in favorite_books]
+        favorite_books_list = [
+            {"id": book.book.id,
+             "title": book.book.title,
+             "subtitle": book.book.subtitle,
+             "authors": book.book.authors,
+             "categories": book.book.categories,
+             "thumbnail": book.book.thumbnail,
+             "description": book.book.description,
+             "published_year": book.book.published_year,
+             "average_rating": book.book.average_rating
+             } for book in favorite_books]
         liked_categories = UserLikedCategories.objects.filter(
-            user=user_profile).values_list('category', flat=True)
+            user=user_profile)
+        categories_list = [cat.category for cat in liked_categories]
+        books = Book.objects.filter(categories__in=categories_list).exclude(id__in=favorite_books_ids).order_by('?')[:60]
+        books_list = [
+            {"id": book.id,
+             "title": book.title,
+             "subtitle": book.subtitle,
+             "authors": book.authors,
+             "categories": book.categories,
+             "thumbnail": book.thumbnail,
+             "description": book.description,
+             "published_year": book.published_year,
+             "average_rating": book.average_rating
+             } for book in books]
 
-        if not liked_categories:
-            return Response({"message": "No liked categories found for recommendations"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # поиск книг, которые принадлежат к любимым категориям пользователя
-        recommended_books = Book.objects.filter(
-            categories__iregex=r'(?i)\b(?:' + '|'.join(liked_categories) + r')\b')
-        books_data = [
-            {
-                "title": book.title,
-                "authors": book.authors,
-                "categories": book.categories,
-                "thumbnail": book.thumbnail,
-                "description": book.description,
-                "published_year": book.published_year,
-            }
-            for book in recommended_books
+        messages = [
+            {"role": "system", "content": "Вы полезный ассистент, который рекомендует книги на основе любимых книг пользователя и списка доступных книг."},
+            {"role": "user", "content": f"Вот список любимых книг пользователя: {favorite_books_list}. На основе этих книг порекомендуйте 10 книг из этого списка: {books_list}. Объясните, почему каждая книга была выбрана, и верните результат в формате JSON с идентификатором книги и причиной для рекомендации. Поля JSON должны быть  id, comment. Ты должен вернуть только JSON без лишнего, только JSON без форматирования. Комментарии должны быть только на русском"}
         ]
 
-        return Response({"recommended_books": books_data}, status=status.HTTP_200_OK)
 
+        openai_url = "https://api.openai.com/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer sk-VZs3FcQWARIUjdotDMh99_-RZ3YCyiYc2EwKITMizRT3BlbkFJDBmToY0WylepyqMoZYbTr1PJZROYFEMsSZ1tqkXXQA",
+            "Content-Type": "application/json"
+        }
+        
+        data = {
+            "model": "gpt-4o",
+            "messages": messages,
+            "max_tokens": 2000,
+            "temperature": 0.7,
+            "n": 1,
+        }
+
+        response = requests.post(openai_url, headers=headers, json=data)
+        print(response.text)
+
+        if response.status_code == 200:
+            gpt_response = response.json()['choices'][0]['message']['content']
+            gpt_response_json = json.loads(gpt_response)
+
+            return Response({"recommended_books": gpt_response_json}, status=status.HTTP_200_OK)
+        else:
+            return Response({"error": "Failed to get recommendations from GPT"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
 
 class FavoriteBookView(APIView):
     permission_classes = [IsAuthenticated]
