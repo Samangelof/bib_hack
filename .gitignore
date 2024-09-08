@@ -1,0 +1,85 @@
+# Системные файлы и папки
+*.DS_Store
+*.pyc
+__pycache__/
+*.swp
+*~
+*#
+
+# Папка виртуального окружения
+venv/
+env/
+.virtualenv/
+.VENV/
+
+# Конфигурационные файлы редакторов/IDE
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+
+# Логи и временные файлы
+*.log
+*.pot
+*.mo
+*.pid
+*.gz
+*.zip
+*.tar.gz
+*.sql
+*.sqlite3
+
+# Секретные ключи и конфиденциальные данные
+.env
+.env.*
+.secret
+
+# Папки с медиа и статическими файлами
+media/
+staticfiles/
+static/
+
+# База данных
+*.sqlite3
+db.sqlite3
+
+# Миграции базы данных
+**/migrations/__pycache__/
+**/migrations/*.pyc
+**/migrations/*.py
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Тестовые покрытия
+htmlcov/
+.coverage
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# PyInstaller
+*.spec
+dist/
+build/
+*.bak
+*.log
+
+# Django stuff:
+*.log
+*.pot
+*.pyc
+__pycache__/
+
+# Node.js stuff:
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# pipenv
+Pipfile.lock
+
+# Сброс кеша
+.cache/

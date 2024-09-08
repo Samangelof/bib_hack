@@ -11,7 +11,7 @@ class CustomUserManager(BaseUserManager):
         if not email:
             raise ValueError(_('Email должен быть указан'))
         if not full_name:
-            raise ValueError(_("FCs должен быть указан "))
+            raise ValueError(_("Full_name должен быть указан "))
         
         email = self.normalize_email(email)
         user = self.model(email=email, phone_number=phone_number, full_name=full_name, **extra_fields)
@@ -45,7 +45,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     email = models.EmailField(_('email address'), unique=True)
     phone_number = models.CharField(_('phone number'), max_length=15, unique=True)
-    full_name = models.CharField(_("fcs"), max_length=255, unique=False, null=False)
+    full_name = models.CharField(_("full_name"), max_length=255, unique=False, null=False)
 
     role = models.CharField(
         _('role'),
@@ -60,7 +60,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     objects = CustomUserManager()
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['phone_number']
+    REQUIRED_FIELDS = ['full_name', 'phone_number']
 
     class Meta:
         verbose_name = _('user')
@@ -69,6 +69,32 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return self.email
     
+
+class UserProfile(models.Model):
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='profile')
+    bio = models.TextField(_('biography'), blank=True)
+    profile_image = models.ImageField(_('profile image'), upload_to='profiles/', blank=True, null=True)
+    website = models.URLField(_('website'), blank=True)
+
+    def __str__(self):
+        return f'Profile of {self.user.email}'
+    
+    # получения всех комментариев и избранных книг пользователя
+    def get_favorite_books(self):
+        return self.user.favorite_books.all()
+
+    # Получение всех комментариев пользователя
+    def get_comments(self):
+        return Comment.objects.filter(author=self.user)
+
+    # Получение всех лайкнутых категорий
+    def get_liked_categories(self):
+        return self.user.liked_categories.all()
+
+    # Получение всех лайкнутых авторов
+    def get_liked_authors(self):
+        return self.user.liked_authors.all()
+
 class Book(models.Model):
     isbn13 = models.CharField(_('ISBN 13'), max_length=13, unique=True)
     isbn10 = models.CharField(_('ISBN 10'), max_length=10, unique=True)
@@ -85,22 +111,6 @@ class Book(models.Model):
 
     def __str__(self):
         return self.title
-
-class UserProfile(models.Model):
-    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='profile')
-    bio = models.TextField(_('biography'), blank=True)
-    profile_image = models.ImageField(_('profile image'), upload_to='profiles/', blank=True, null=True)
-    website = models.URLField(_('website'), blank=True)
-
-    def __str__(self):
-        return f'Profile of {self.user.email}'
-    
-    # получения всех комментариев и избранных книг пользователя
-    def get_favorite_books(self):
-        return self.user.favorite_books.all()
-
-    def get_comments(self):
-        return Comment.objects.filter(author=self.user)
 
     
 # ----------------
@@ -125,6 +135,7 @@ class Comment(models.Model):
     def __str__(self):
         return f"Comment by {self.author.email} on {self.discussion.title}"
 
+# ----------------
 
 class UserLikedCategories(models.Model):
     user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='liked_categories')
@@ -137,6 +148,20 @@ class UserLikedCategories(models.Model):
 
     def __str__(self):
         return f"{self.user.user.email} likes {self.category}"
+
+# ----------------
+
+class UserLikedAuthors(models.Model):
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='liked_authors')
+    author = models.CharField(null=False, max_length=255)
+
+    class Meta:
+        unique_together = ('user', 'author')
+        verbose_name = _('User Liked Author')
+        verbose_name_plural = _('User Liked Authors')
+
+    def __str__(self):
+        return f"{self.user.email} likes {self.author}"
 
 # ----------------
 # избранные

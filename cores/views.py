@@ -12,7 +12,9 @@ from .serializers import (
     RegisterSerializer,
     DiscussionSerializer,
     BookSerializer,
-    CommentSerializer
+    CommentSerializer,
+    UserProfileSerializer,
+    UserLikedAuthorsSerializer
 )
 from .models import (
     Book,
@@ -21,7 +23,8 @@ from .models import (
     CustomUser,
     UserFavoriteBook,
     Discussion,
-    Comment
+    Comment, 
+    UserLikedAuthors
 )
 
 import requests
@@ -70,6 +73,49 @@ class LoginView(APIView):
             return Response({"detail": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
 
 
+class UserProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user_profile = UserProfile.objects.get(user=request.user)
+        serializer = UserProfileSerializer(user_profile)
+        
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+
+class LikedAuthorsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: HttpRequest) -> HttpResponse:
+        user_profile = get_object_or_404(UserProfile, user=request.user)
+        liked_authors = UserLikedAuthors.objects.filter(user=user_profile)
+        serializer = UserLikedAuthorsSerializer(liked_authors, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request: HttpRequest) -> HttpResponse:
+        user_profile = get_object_or_404(UserProfile, user=request.user)
+        author = request.data.get("author")
+
+        if not author:
+            return Response({"error": "Author is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Проверка на существование автора в базе книг
+        books = Book.objects.exclude(authors__isnull=True).exclude(authors__exact='')
+        unique_authors = {auth.strip() for book in books for auth in book.authors.split(',')}
+
+        if author not in unique_authors:
+            return Response({"error": "Author not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        liked_author, created = UserLikedAuthors.objects.get_or_create(
+            user=user_profile,
+            author=author
+        )
+
+        if created:
+            return Response({"message": "Author liked successfully"}, status=status.HTTP_201_CREATED)
+        else:
+            return Response({"message": "Author already liked"}, status=status.HTTP_200_OK)
+        
 class CategoriesView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -132,6 +178,45 @@ class LikedCategoriesView(APIView):
         else:
             return Response({"message": "Category already exists"}, status=status.HTTP_200_OK)
 
+
+class LikedAuthorsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: HttpRequest) -> HttpResponse:
+        user_profile = get_object_or_404(UserProfile, user=request.user)
+        liked_authors = UserLikedAuthors.objects.filter(user=user_profile)
+        serializer = UserLikedAuthorsSerializer(liked_authors, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request: HttpRequest) -> HttpResponse:
+        user_profile = get_object_or_404(UserProfile, user=request.user)
+        author = request.data.get("author")
+
+        if not author:
+            return Response({"error": "Author is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Проверка на существование автора в базе книг
+        books = Book.objects.exclude(authors__isnull=True).exclude(authors__exact='')
+        unique_authors = set()
+        for book in books:
+            authors_list = book.authors.split(';')
+
+            for author_iter in authors_list:
+                unique_authors.add(author_iter.strip())
+
+        
+        if author not in unique_authors:
+            return Response({"error": "Author not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        liked_author, created = UserLikedAuthors.objects.get_or_create(
+            user=user_profile,
+            author=author
+        )
+
+        if created:
+            return Response({"message": "Author liked successfully"}, status=status.HTTP_201_CREATED)
+        else:
+            return Response({"message": "Author already liked"}, status=status.HTTP_200_OK)
 
 class RecommendationView(APIView):
     permission_classes = [IsAuthenticated]

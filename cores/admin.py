@@ -6,7 +6,8 @@ from cores.models import (
     Comment,
     UserFavoriteBook,
     UserLikedCategories,
-    UserProfile
+    UserProfile,
+    UserLikedAuthors
 )
 
 
@@ -17,3 +18,4 @@ admin.site.register(Comment)
 admin.site.register(UserFavoriteBook)
 admin.site.register(UserLikedCategories)
 admin.site.register(UserProfile)
+admin.site.register(UserLikedAuthors)
