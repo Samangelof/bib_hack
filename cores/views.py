@@ -7,14 +7,20 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
-from .serializers import RegisterSerializer, DiscussionSerializer, BookSerializer
+from .serializers import (
+    RegisterSerializer,
+    DiscussionSerializer,
+    BookSerializer,
+    CommentSerializer
+)
 from .models import (
     Book,
     UserLikedCategories,
     UserProfile,
     CustomUser,
     UserFavoriteBook,
-    Discussion
+    Discussion,
+    Comment
 )
 
 import requests
@@ -291,6 +297,72 @@ class DiscussionDetailAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
     
 
+
+# {"discussion":["Обязательное поле."],"content":["Обязательное поле."]}
+class CommentListCreateAPIView(APIView):
+    """
+    список комментариев к обсуждению или создать ыкомментарий
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, discussion_pk):
+        try:
+            discussion = Discussion.objects.get(pk=discussion_pk)
+        except Discussion.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        comments = discussion.comments.all()
+        serializer = CommentSerializer(comments, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, discussion_pk):
+        try:
+            discussion = Discussion.objects.get(pk=discussion_pk)
+        except Discussion.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        serializer = CommentSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(author=request.user, discussion=discussion)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class CommentDetailAPIView(APIView):
+    """
+    получить, обновить, удалить конкретный комментарий
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self, pk):
+        try:
+            return Comment.objects.get(pk=pk)
+        except Comment.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+    def get(self, request, pk):
+        comment = self.get_object(pk)
+        serializer = CommentSerializer(comment)
+        return Response(serializer.data)
+
+    def put(self, request, pk):
+        comment = self.get_object(pk)
+        if comment.author != request.user:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        serializer = CommentSerializer(comment, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, pk):
+        comment = self.get_object(pk)
+        if comment.author != request.user:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        comment.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
 # ---------------------------------------------------------------
 # список книг и создание новых зкниг
 class BookListCreateView(generics.ListCreateAPIView):
@@ -304,3 +376,15 @@ class BookRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticated]
     queryset = Book.objects.all()
     serializer_class = BookSerializer
+
+
+class BookSearchView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: HttpRequest) -> HttpResponse:
+        query = request.query_params.get('q', None)
+        if query:
+            books = Book.objects.filter(title__icontains=query)
+            serializer = BookSerializer(books, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response({"error": "Query parameter 'q' is required"}, status=status.HTTP_400_BAD_REQUEST)

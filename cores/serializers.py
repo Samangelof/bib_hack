@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import Book, Discussion
+from .models import Book, Discussion, Comment
 
 
 User = get_user_model()
@@ -41,3 +41,10 @@ class DiscussionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Discussion
         fields = ['id', 'book', 'title', 'created_at', 'updated_at']
+
+class CommentSerializer(serializers.ModelSerializer):
+    author = serializers.ReadOnlyField(source='author.email')
+
+    class Meta:
+        model = Comment
+        fields = ['id', 'discussion', 'content', 'created_at', 'updated_at', 'author']
