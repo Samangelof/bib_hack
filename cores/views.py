@@ -255,9 +255,7 @@ class RecommendationView(APIView):
 
         messages = [
             {"role": "system", "content": "Вы полезный ассистент, который рекомендует книги на основе любимых книг пользователя и списка доступных книг."},
-            {"role": "user", "content": f"Вот список любимых книг пользователя: {favorite_books_list}. На основе этих книг порекомендуйте 10 книг из этого списка: {books_list}.
-             Объясните, почему каждая книга была выбрана, и верните результат в формате JSON с идентификатором книги и причиной для рекомендации. Поля JSON должны быть  id,
-             comment. Ты должен вернуть только JSON без лишнего, только JSON без форматирования. Комментарии должны быть только на русском"}
+            {"role": "user", "content": f"Вот список любимых книг пользователя: {favorite_books_list}. На основе этих книг порекомендуйте 10 книг из этого списка: {books_list}. Объясните, почему каждая книга была выбрана, и верните результат в формате JSON с идентификатором книги и причиной для рекомендации. Поля JSON должны быть  id, comment. Ты должен вернуть только JSON без лишнего, только JSON без форматирования. Комментарии должны быть только на русском"}
         ]
 
 
@@ -284,6 +282,7 @@ class RecommendationView(APIView):
 
             return Response({"recommended_books": gpt_response_json}, status=status.HTTP_200_OK)
         else:
+            print(response.text)
             return Response({"error": "Failed to get recommendations from GPT"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 
