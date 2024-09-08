@@ -17,7 +17,8 @@ from cores.views import (
     BookRetrieveUpdateDestroyView,
     CommentDetailAPIView,
     CommentListCreateAPIView,
-    BookSearchView
+    BookSearchView,
+    AutoComplete
 )
 
 
@@ -43,6 +44,8 @@ urlpatterns = [
     path('api/books/', BookListCreateView.as_view(), name='book_list_create'),
     path('api/books/search/', BookSearchView.as_view(), name='book_search'),
     path('api/books/<int:pk>/', BookRetrieveUpdateDestroyView.as_view(), name='book_detail'),
+
+    path('api/auto_complete/', AutoComplete.as_view(), name="auto_complete")
 ]
 
 

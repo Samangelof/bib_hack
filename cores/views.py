@@ -7,6 +7,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.shortcuts import get_object_or_404
+from django.db.models import Q
 from .serializers import (
     RegisterSerializer,
     DiscussionSerializer,
@@ -388,3 +389,64 @@ class BookSearchView(APIView):
             serializer = BookSerializer(books, many=True)
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response({"error": "Query parameter 'q' is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class AutoComplete(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request: HttpRequest) -> HttpResponse:
+        who = request.data.get("who")
+        searched = request.data.get("searched")
+
+        if not searched:
+            return Response({"error": "Search query is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if who == "author":
+            results = self.search_author(searched)
+
+        elif who == "book":
+            results = self.search_book(searched)
+
+        elif who == "category":
+            results = self.search_category(searched)
+
+        else:
+            return Response({"error": 'Incorrect "who" value'}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response(results, status=status.HTTP_200_OK)
+
+    def search_author(self, query):
+        # Извлекаем уникальных авторов, разделяя строки в поле authors
+        all_authors = Book.objects.values_list('authors', flat=True)
+        unique_authors = set()
+
+        for authors in all_authors:
+            # Разделяем строку на отдельных авторов (предполагаем, что они разделены запятой)
+            author_list = authors.split(',')
+            for author in author_list:
+                if query.lower() in author.strip().lower():  # Фильтруем по введенному запросу
+                    unique_authors.add(author.strip())  # Добавляем автора в сет (чтобы избежать дубликатов)
+
+        # Возвращаем не более 10 уникальных авторов
+        return [{"name": author} for author in list(unique_authors)[:10]]
+
+    def search_book(self, query):
+        # Ищем книги по названию или подзаголовку, возвращаем не более 10 результатов
+        books = Book.objects.filter(Q(title__icontains=query) | Q(subtitle__icontains=query)).values("id", "title", "subtitle")[:10]
+        return list(books)
+
+    def search_category(self, query):
+        # Извлекаем уникальные категории, разделяя строки в поле categories
+        all_categories = Book.objects.values_list('categories', flat=True)
+        unique_categories = set()
+
+        for categories in all_categories:
+            # Разделяем строку на отдельные категории (предполагаем, что они разделены запятой)
+            category_list = categories.split(',')
+            for category in category_list:
+                if query.lower() in category.strip().lower():  # Фильтруем по введенному запросу
+                    unique_categories.add(category.strip())  # Добавляем категорию в сет (чтобы избежать дубликатов)
+
+        # Возвращаем не более 10 уникальных категорий
+        return [{"name": category} for category in list(unique_categories)[:10]]
