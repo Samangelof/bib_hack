@@ -18,18 +18,23 @@ from cores.views import (
     CommentDetailAPIView,
     CommentListCreateAPIView,
     BookSearchView,
-    AutoComplete
+    AutoComplete,
+    LikedAuthorsView,
+    UserProfileView
 )
 
 
 urlpatterns = [
     path('api/register/', RegisterView.as_view(), name='register'),
+    path('api/user_profile/', UserProfileView.as_view(), name='user_profile'),
+
     path('api/login/', LoginView.as_view(), name='login'),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     
     path('api/categories/', CategoriesView.as_view(), name="categories"),
     path("api/liked_categories/", LikedCategoriesView.as_view(), name="liked_categories"),
+    path('api/liked-authors/', LikedAuthorsView.as_view(), name='liked_authors'),
     path('api/recommendations/', RecommendationView.as_view(), name='recommendations'),
 
     path('api/favorites/', FavoriteBookView.as_view(), name='favorites'),
@@ -49,6 +54,7 @@ urlpatterns = [
 ]
 
 
+# url: register
 # {
 #     "email": "user@example.com",
 #     "phone_number": "87775554422",
