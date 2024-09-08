@@ -417,16 +417,16 @@ class AutoComplete(APIView):
         return Response(results, status=status.HTTP_200_OK)
 
     def search_author(self, query):
-        # Извлекаем уникальных авторов, разделяя строки в поле authors
+        # Извлекаем всех авторов и разбиваем их по разделителю ';', затем фильтруем
         all_authors = Book.objects.values_list('authors', flat=True)
         unique_authors = set()
 
         for authors in all_authors:
-            # Разделяем строку на отдельных авторов (предполагаем, что они разделены запятой)
-            author_list = authors.split(',')
+            # Разделяем строку на отдельных авторов (предполагаем, что они разделены точкой с запятой)
+            author_list = authors.split(';')
             for author in author_list:
                 if query.lower() in author.strip().lower():  # Фильтруем по введенному запросу
-                    unique_authors.add(author.strip())  # Добавляем автора в сет (чтобы избежать дубликатов)
+                    unique_authors.add(author.strip())  # Добавляем уникальные имена авторов
 
         # Возвращаем не более 10 уникальных авторов
         return [{"name": author} for author in list(unique_authors)[:10]]
