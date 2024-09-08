@@ -261,7 +261,7 @@ class RecommendationView(APIView):
 
         openai_url = "https://api.openai.com/v1/chat/completions"
         headers = {
-            "Authorization": f"Bearer sk-VZs3FcQWARIUjdotDMh99_-RZ3YCyiYc2EwKITMizRT3BlbkFJDBmToY0WylepyqMoZYbTr1PJZROYFEMsSZ1tqkXXQA",
+            "Authorization": f"Bearer",
             "Content-Type": "application/json"
         }
         
